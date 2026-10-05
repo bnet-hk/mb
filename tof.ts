@@ -204,21 +204,23 @@ namespace bnet {
     //% block="distance (cm)"
     //% subcategory="TOF" weight=90
     export function distance(): number {
-    if (!tofStarted) init()
-    return Math.round(latestMm / 10)
+        if (!tofStarted) init()
+        return Math.round(latestMm / 10)
 }
 
     /**
-     * True if something is closer than the given distance (mm).
+     * True if something is closer than the given distance (cm).
      */
-    //% block="object closer than %mm mm"
-    //% mm.min=20 mm.max=2000 mm.defl=100
+    //% block="object closer than %cm cm"
+    //% cm.min=2 cm.max=200 cm.defl=10
     //% subcategory="TOF" weight=80
     export function closerThan(cm: number): boolean {
         if (!tofStarted) init()
         return latestMm < cm * 10
-    }
-
+}
+    /**
+     * True if something is farther than the given distance (cm).
+     */
     //% block="object farther than %cm cm"
     //% cm.min=2 cm.max=200 cm.defl=10
     //% subcategory="TOF" weight=70
