@@ -201,12 +201,12 @@ namespace bnet {
     /**
      * Latest distance measured, in millimetres.
      */
-    //% block="distance (mm)"
+    //% block="distance (cm)"
     //% subcategory="TOF" weight=90
     export function distance(): number {
-        if (!tofStarted) init()
-        return latestMm
-    }
+    if (!tofStarted) init()
+    return Math.round(latestMm / 10)
+}
 
     /**
      * True if something is closer than the given distance (mm).
@@ -216,6 +216,14 @@ namespace bnet {
     //% subcategory="TOF" weight=80
     export function closerThan(mm: number): boolean {
         if (!tofStarted) init()
-        return latestMm < mm
+        return latestMm < cm * 10
     }
+
+    //% block="object farther than %cm cm"
+    //% cm.min=2 cm.max=200 cm.defl=10
+    //% subcategory="TOF" weight=70
+    export function fartherThanCm(cm: number): boolean {
+    if (!tofStarted) init()
+    return latestMm > cm * 10
+}
 }
