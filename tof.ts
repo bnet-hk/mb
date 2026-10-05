@@ -214,7 +214,7 @@ namespace bnet {
     //% block="object closer than %mm mm"
     //% mm.min=20 mm.max=2000 mm.defl=100
     //% subcategory="TOF" weight=80
-    export function closerThan(mm: number): boolean {
+    export function closerThan(cm: number): boolean {
         if (!tofStarted) init()
         return latestMm < cm * 10
     }
@@ -223,7 +223,7 @@ namespace bnet {
     //% cm.min=2 cm.max=200 cm.defl=10
     //% subcategory="TOF" weight=70
     export function fartherThanCm(cm: number): boolean {
-    if (!tofStarted) init()
-    return latestMm > cm * 10
+        if (!tofStarted) init()
+        return latestMm > cm * 10
 }
 }
