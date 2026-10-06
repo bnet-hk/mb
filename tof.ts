@@ -1,4 +1,12 @@
 namespace bnet {
+    // ============================================================
+    //  TOF DISTANCE OFFSET  — change this value if needed
+    //  Default -40 means readings are corrected by -4 cm.
+    //  The "set TOF distance adjustment" block ADDS to this base:
+    //    base -40 + block(+1 cm = +10) => actual offset -30 mm
+    // ============================================================
+    const BASE_OFFSET_MM = -40
+
     const TOF_ADDR = 0x29
     const TOF_IO_TIMEOUT = 1000
 
@@ -8,6 +16,7 @@ namespace bnet {
     let is_aperture = false
     let spad_map: number[] = [0, 0, 0, 0, 0, 0]
     let latestMm = 8190
+    let offsetMm = BASE_OFFSET_MM
 
     function tReadReg(raddr: number): number {
         pins.i2cWriteNumber(TOF_ADDR, raddr, NumberFormat.UInt8BE, false)
@@ -172,6 +181,13 @@ namespace bnet {
         return true
     }
 
+    // internal: raw reading + offset, clamped so it never goes negative
+    function correctedMm(): number {
+        let v = latestMm + offsetMm
+        if (v < 0) v = 0
+        return v
+    }
+
     /**
      * Initialise the TOF sensor (VL53L0X). Put this in "on start".
      * Wiring: SDA -> P20, SCL -> P19, VIN -> 3V, GND -> GND
@@ -199,14 +215,26 @@ namespace bnet {
     }
 
     /**
-     * Latest distance measured, in millimetres.
+     * Adjust the measured distance. Put this AFTER "init TOF sensor".
+     * This value is ADDED to the built-in base offset (-4 cm).
+     * Example: base -4 cm + block (+1 cm) => actual correction -3 cm.
+     */
+    //% block="set TOF distance adjustment %cm cm"
+    //% cm.defl=0
+    //% subcategory="TOF" weight=95
+    export function setAdjustment(cm: number): void {
+        offsetMm = BASE_OFFSET_MM + Math.round(cm * 10)
+    }
+
+    /**
+     * Latest distance measured, in centimetres (corrected).
      */
     //% block="distance (cm)"
     //% subcategory="TOF" weight=90
     export function distance(): number {
         if (!tofStarted) init()
-        return Math.round(latestMm / 10)
-}
+        return Math.round(correctedMm() / 10)
+    }
 
     /**
      * True if something is closer than the given distance (cm).
@@ -216,8 +244,9 @@ namespace bnet {
     //% subcategory="TOF" weight=80
     export function closerThan(cm: number): boolean {
         if (!tofStarted) init()
-        return latestMm < cm * 10
-}
+        return correctedMm() < cm * 10
+    }
+
     /**
      * True if something is farther than the given distance (cm).
      */
@@ -226,6 +255,6 @@ namespace bnet {
     //% subcategory="TOF" weight=70
     export function fartherThanCm(cm: number): boolean {
         if (!tofStarted) init()
-        return latestMm > cm * 10
-}
+        return correctedMm() > cm * 10
+    }
 }
