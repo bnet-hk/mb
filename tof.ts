@@ -7,6 +7,10 @@ namespace bnet {
     // ============================================================
     const BASE_OFFSET_MM = -40
 
+    // Value reported when the target is out of range (in cm)
+    // 99999 is an obvious "not a real reading" flag for students.
+    const OUT_OF_RANGE_CM = 99999
+
     const TOF_ADDR = 0x29
     const TOF_IO_TIMEOUT = 1000
 
@@ -17,6 +21,7 @@ namespace bnet {
     let spad_map: number[] = [0, 0, 0, 0, 0, 0]
     let latestMm = 8190
     let offsetMm = BASE_OFFSET_MM
+    let outOfRange = false
 
     function tReadReg(raddr: number): number {
         pins.i2cWriteNumber(TOF_ADDR, raddr, NumberFormat.UInt8BE, false)
@@ -100,7 +105,8 @@ namespace bnet {
 
         tWriteFlag(0x60, 1, true)
         tWriteFlag(0x60, 4, true)
-        tWriteReg16(0x44, Math.floor(0.25 * (1 << 7)))
+        // Signal rate limit: 0.1 MCPS = long-range mode (was 0.25 MCPS)
+        tWriteReg16(0x44, Math.floor(0.1 * (1 << 7)))
         tWriteReg(0x01, 0xff)
 
         if (!spad_info()) return false
@@ -181,8 +187,10 @@ namespace bnet {
         return true
     }
 
-    // internal: raw reading + offset, clamped so it never goes negative
+    // internal: raw reading + offset, clamped so it never goes negative.
+    // Returns the fixed out-of-range value (in mm) when nothing is detected.
     function correctedMm(): number {
+        if (outOfRange) return OUT_OF_RANGE_CM * 10
         let v = latestMm + offsetMm
         if (v < 0) v = 0
         return v
@@ -207,7 +215,12 @@ namespace bnet {
                 if ((tReadReg(0x13) & 0x07) != 0) {
                     let d = tReadReg16(0x14 + 10)
                     tWriteReg(0x0b, 0x01)
-                    if (d > 0 && d < 8000) latestMm = d
+                    if (d > 0 && d < 8000) {
+                        latestMm = d
+                        outOfRange = false
+                    } else {
+                        outOfRange = true
+                    }
                 }
                 basic.pause(5)
             }
@@ -228,6 +241,7 @@ namespace bnet {
 
     /**
      * Latest distance measured, in centimetres (corrected).
+     * Returns 99999 when the target is out of range.
      */
     //% block="distance (cm)"
     //% subcategory="TOF" weight=90
