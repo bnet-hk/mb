@@ -1,6 +1,6 @@
 {
     "name": "bnet-extension",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "BNET robot blocks for micro:bit: motor control, RFID reader, and Time-of-Flight (ToF) distance sensor.",
     "license": "MIT",
     "dependencies": {
